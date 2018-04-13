@@ -1,2 +1,2 @@
-# node-componet
+# node-componets
 node components for webpack
