@@ -1,0 +1,14 @@
+{
+  "deploy": {
+    "172.16.62.135": {
+      "remotePath": "/home/web/vueapp",
+      "localPath": "./dist",
+      "server": {
+        "host": "172.16.62.135",
+        "port": 22,
+        "username": "zhangyu",
+        "password": "0000"
+      }
+    }
+  }
+}

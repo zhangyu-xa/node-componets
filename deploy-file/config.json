@@ -1,0 +1,34 @@
+{
+    "fitmgr-webframe": {
+        "172.16.62.135": {
+            "remotePath": "/home/frontend/webframe",
+            "localPath": "./dist",
+            "server": {
+                "host": "172.16.62.135",
+                "port": 22,
+                "username": "root",
+                "password": "fhrootroot"
+            }
+        },
+        "172.16.62.20": {
+            "remotePath": "/home/frontend/webframe",
+            "localPath": "./dist",
+            "server": {
+                "host": "172.16.62.20",
+                "port": 22,
+                "username": "wuh151",
+                "password": "iURQt5roZDfm6svJ"
+            }
+        },
+        "172.16.62.141": {
+            "remotePath": "/home/frontend/webframe",
+            "localPath": "./dist",
+            "server": {
+                "host": "172.16.62.141",
+                "port": 22,
+                "username": "wuh151",
+                "password": "iURQt5roZDfm6svJ"
+            }
+        }
+    }
+}

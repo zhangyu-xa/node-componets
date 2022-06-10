@@ -1,0 +1,12 @@
+{
+	"name": "fitmgr",
+	"version": "1.0.0",
+	"description": "the program for deploying web files",
+	"private": true,
+	"main": "",
+	"author": "fitmgr",
+	"devDependencies": {
+		"ssh2": "^0.8.5",
+		"through": "^2.3.8"
+	}
+}
