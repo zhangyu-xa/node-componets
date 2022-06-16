@@ -2,7 +2,7 @@
 * @Author: zhangyu
 * @Date:   2021-12-25 20:46:39
 * @Last Modified by:   zhangyu
-* @Last Modified time: 2022-06-10 14:34:55
+* @Last Modified time: 2022-06-16 11:25:52
 * @Email: zhangyu6936@fiberhome.com
 */
 const child_process = require('child_process');
@@ -16,15 +16,31 @@ const config = require("./config.json");
 dotenv.config();
 
 let ssh2Tool = null;
+let localPath = "";
+let remotePath = "";
+let server = null;
+
+function init(conf) {
+	// 释放链接
+	if(ssh2Tool) ssh2Tool.disConnect();
+	// 创建ssh2Tool实例
+	ssh2Tool = new SSH2Tools(conf);
+	// 初始化局部变量
+	localPath = conf.localPath;
+	remotePath = conf.remotePath;
+	server = conf.server;
+	// 实现链式调用
+	return this;
+}
 /**
  * 发布启动逻辑
  */
-function dealPublish ({localPath, remotePath, server}) {
-	const distPath = path.join(__dirname, "../", localPath).replace(/\\/gi, '/');
+function dealPublish () {
+	const distPath = localPath.replace(/\\/gi, '/');
 	stdout(`部署目标服务器IP：${server.host}\n待部署的本地目录：${distPath}\n部署到服务器目录：${remotePath}\n启动发布流程...\n\n`, true);
 	// 创建本地压缩包
 	stdout(`创建本地压缩包文件`);
-	const zipFileName = `${localPath.split("/").pop()}.zip`;
+	const zipFileName = `${distPath.split("/").pop()}.zip`;
 	const zipLPath = distPath.substring(0, distPath.lastIndexOf("/"));
 	compressing.zip.compressDir(distPath, `${zipLPath}/${zipFileName}`).then(() => {
 		stdout(`创建本地压缩包文件成功`);
@@ -199,14 +215,15 @@ function checkNpmCmd(isLegal) {
 		(npmCooked.length === 3 && isLegal && npmCooked[2].indexOf("--") < 0));
 }
 
-(function () {
+/*(function () {
+	console.log("here");
 	const isRevertScene = process.env.npm_config_revert || false;
 	const isLogScene = process.env.npm_config_log || false;
 	const isForceMode = process.env.npm_config_force || false;
 	
-	/*console.log(JSON.parse(process.env.npm_config_argv)["cooked"]);
-	console.log(process.env);
-	return*/;
+	// console.log(JSON.parse(process.env.npm_config_argv)["cooked"]);
+	// console.log(process.env);
+	// return;
 	// 检查命令参数是否合法
 	if(!checkNpmCmd(isRevertScene || isLogScene || isForceMode)) {
 		stdout(getHelpInfo(), true);
@@ -239,4 +256,6 @@ function checkNpmCmd(isLegal) {
 	}, err => {
 		stdout(err, true);
 	});
-})();
+})();*/
+exports.startPublish = dealPublish;
+exports.init = init;
