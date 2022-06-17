@@ -98,7 +98,6 @@ async function loadFileByRequire(configFilePath) {
 
 (async function() {
     const config = await loadFileByEsbuild(configFilePath);
-    const { localPath, default: defaultServer, servers } = config;
-    DeployTools.init({ localPath, ...servers[defaultServer]}).startPublish();
+    DeployTools.init(config).start();
 })();
 

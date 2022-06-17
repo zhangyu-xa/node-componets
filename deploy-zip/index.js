@@ -2,7 +2,7 @@
 * @Author: zhangyu
 * @Date:   2021-12-25 20:46:39
 * @Last Modified by:   zhangyu
-* @Last Modified time: 2022-06-16 11:25:52
+* @Last Modified time: 2022-06-17 16:38:22
 * @Email: zhangyu6936@fiberhome.com
 */
 const child_process = require('child_process');
@@ -11,26 +11,53 @@ const path = require('path');
 const compressing = require('compressing');
 const { stdout, getTimeSlot, createLocalFile, getHelpInfo } = require('./utils.js');
 const SSH2Tools = require('./deploy.js');
-const config = require("./config.json");
 
 dotenv.config();
 
 let ssh2Tool = null;
-let localPath = "";
-let remotePath = "";
-let server = null;
+let config = {};
+let isForceMode = process.env.npm_config_force === "true";
+let isRevertScene = process.env.npm_config_revert === "true";
+let isLogScene = process.env.npm_config_log === "true";
 
-function init(conf) {
+/**
+ * 初始化上下文变量
+ *
+ * @param  {[object]} conf 本地配置文件
+ * @return {[object]}      context
+ */
+function init(conf, mode) {
 	// 释放链接
 	if(ssh2Tool) ssh2Tool.disConnect();
-	// 创建ssh2Tool实例
-	ssh2Tool = new SSH2Tools(conf);
 	// 初始化局部变量
-	localPath = conf.localPath;
-	remotePath = conf.remotePath;
-	server = conf.server;
+	config = conf;
 	// 实现链式调用
 	return this;
+}
+
+function start() {
+	// 获取部署配置信息
+	getDeployConfig().then(sysConf => {
+		//创建ssh2Tool实例
+		ssh2Tool = new SSH2Tools(sysConf);
+
+		// 触发回滚，目前只支持回滚到上一次
+		if(isRevertScene) {
+			startRevert(sysConf);
+			return;
+		}
+
+		// 显示更新日志
+		if(isLogScene) {
+			showDeployLog(sysConf);
+			return;
+		}
+		
+		// 触发远程发布
+		startPublish(sysConf, isForceMode);
+	}, err => {
+		stdout(err, true);
+	});
 }
 /**
  * 发布启动逻辑
@@ -100,7 +127,7 @@ function updateDeployLog(remotePath) {
 
 function checkWorkSpace(isForceMode) {
 	return new Promise((resolve, reject) => {
-		isForceMode ? resolve() : child_process.exec("git status -s", { 'encoding': 'utf-8' }, (error, stdout, stderr) => {
+		isForceMode ? resolve() : child_process.exec("git status -s", { 'encoding': 'utf-8', 'cwd': process.cwd() }, (error, stdout, stderr) => {
             if(error || stderr) reject(error || stderr);
             if(stdout) reject("error: 当前工作区仍有未提交或者未纳入版本控制的文件，请确保工作干净后再开始部署");
             resolve();
@@ -115,7 +142,10 @@ function getGitInfos() {
 				 git config --get user.email
 				`;
 	try {
-		return child_process.execSync(cmd.replace(/\n/gm,""), { 'encoding': 'utf-8' }).split("\n");
+		return child_process.execSync(cmd.replace(/\n/gm,""), { 
+			'cwd': process.cwd(),
+			'encoding': 'utf-8' 
+		}).split("\n");
 	} catch (e) { 
 		// 静默处理异常
 		stdout("warn: can't get git information.", true);
@@ -123,18 +153,18 @@ function getGitInfos() {
 	}
 }
 
-function getDeployConf(sysName) {
+function getDeployConfig() {
+	const sysName = process.env.npm_package_name;
 	const version = process.env.npm_package_version;
+	const { localPath, servers, default: defaultServer } = config;
+	// 默认取.env中的值，如果没有则取默认值
+	const deployServer = process.env.Deploy_Server || defaultServer;
+
 	return new Promise((resolve, reject) => {
-		// 检测项目配置
-		const sysConf = typeof config === 'object' ? config[sysName] : null;
-		if(!sysConf || Object.prototype.toString.call(sysConf) !== "[object Object]") reject(`未检测到项目 ${sysName} 部署配置信息，请添加并确认`);
+		if(!deployServer) reject(`未检测到项目 ${sysName} 部署配置信息，请添加并确认`);
+		if(!servers[deployServer]) reject(`1.未检测到项目 ${sysName} 关于远程目标服务器 ${deployServer} 的部署配置信息\n2.请确认.env文件的Deploy_Server节点配置是否正确`);
 		
-		//如果没有传递部署服务器的ip，则默认部署在第一个配置
-		let serverIp = process.env.deploy_IP || Object.keys(sysConf)[0];
-		if(!serverIp || !sysConf[serverIp]) reject(serverIp ? `1.未检测到项目 ${sysName} 关于远程目标服务器 ${serverIp} 的部署配置信息\n2.请确认.env文件的deploy_IP节点配置是否正确` : 
-			`未检测到项目 ${sysName} 部署配置信息，请添加并确认`);
-		resolve(Object.assign(sysConf[serverIp], {sysName, version}));
+		resolve({ sysName, version, localPath, ...servers[deployServer] });
 	});
 }
 
@@ -257,5 +287,5 @@ function checkNpmCmd(isLegal) {
 		stdout(err, true);
 	});
 })();*/
-exports.startPublish = dealPublish;
 exports.init = init;
+exports.start = start;

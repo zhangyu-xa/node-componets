@@ -2,7 +2,7 @@
 * @Author: zhangyu
 * @Date:   2021-12-25 17:32:41
 * @Last Modified by:   zhangyu
-* @Last Modified time: 2021-12-28 14:15:20
+* @Last Modified time: 2022-06-17 16:34:25
 * @Email: zhangyu6936@fiberhome.com
 */
 
@@ -57,7 +57,8 @@ function stdout(str, isMutiLineMode) {
 	// 移动光标到行首
 	!isMutiLineMode && readline.cursorTo(process.stdout, 0);
 	// 输出到控制台
-	process.stdout.write(str);
+	if(Object.prototype.toString.call(str) === '[object String]') process.stdout.write(str);
+	if(Object.prototype.toString.call(str) === '[object Object]') process.stdout.write(JSON.stringify(str));
 }
 
 /**
@@ -68,7 +69,7 @@ function stdout(str, isMutiLineMode) {
  * @return {void}
  */
 function createLocalFile(dir, content, fileName) {
-	const localFile = `${path.join(__dirname, "../", dir)}\\${fileName}`;
+	const localFile = `${dir)}\\${fileName}`;
 	// 先删除，再创建
 	if (fs.existsSync(localFile)) {
 		fs.unlinkSync(localFile);
